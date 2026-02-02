@@ -116,4 +116,37 @@ public class AccountController : Controller
         return RedirectToAction("Index", "Home");
     }
 
+    [HttpGet]
+    public IActionResult Login() => View();
+
+    [HttpPost]
+    public async Task<IActionResult> Login(LoginViewModel loginModel)
+    {
+        if (ModelState.IsValid)
+        {
+            var user = await _userManager.FindByEmailAsync(loginModel.Email);
+            if (user != null && !user.IsBlocked)
+            {
+                user.LastLoginTime = DateTimeOffset.UtcNow;
+                await _userManager.UpdateAsync(user);
+            }
+
+            var result = await _signInManager.PasswordSignInAsync(loginModel.Email, loginModel.Password, false, false);
+
+            if (result.Succeeded)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+        }
+
+        return View(loginModel);
+    }
+
+    public async Task<IActionResult> Logout()
+    {
+        await _signInManager.SignOutAsync();
+        return RedirectToAction("Login", "Account");
+    }
 }
