@@ -1,8 +1,111 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model IEnumerable<UserManagement.Models.ApplicationUser>
+@{
+    ViewData["Title"] = "User Management";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container-fluid mt-4">
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success py-2 small alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger py-2 small alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert alert-info py-2 small alert-dismissible fade show" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i> @TempData["Info"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="btn-toolbar bg-light p-2 border rounded-top" role="toolbar">
+        <form method="post" id="userForm" class="d-flex align-items-center">
+            <button type="submit" formaction="@Url.Action("Block", "Home")" class="btn btn-outline-danger btn-sm me-2">
+                Block
+            </button>
+            <button type="submit" formaction="@Url.Action("Unblock", "Home")" class="btn btn-outline-secondary btn-sm me-2" title="Unblock">
+                <i class="bi bi-unlock-fill"></i>
+            </button>
+            <button type="submit" formaction="@Url.Action("Delete", "Home")" class="btn btn-outline-danger btn-sm me-2" title="Delete">
+                <i class="bi bi-trash-fill"></i>
+            </button>
+            <button type="submit" formaction="@Url.Action("DeleteUnverified", "Home")" class="btn btn-outline-warning btn-sm" title="Delete Unverified">
+                <i class="bi bi-person-x"></i>
+            </button>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-sm table-hover table-bordered border-top-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-center" style="width: 40px;">
+                        <input type="checkbox" id="selectAll" class="form-check-input" />
+                    </th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Last Login</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    <tr>
+                        <td class="text-center">
+                            <input type="checkbox" name="selectedUserIds" value="@user.Id" class="form-check-input user-checkbox" form="userForm" />
+                        </td>
+                        <td>@user.Name</td>
+                        <td>@user.Email</td>
+                        <td class="small text-muted">@user.LastLoginTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>
+                            @if (user.IsBlocked)
+                            {
+                                <span class="badge bg-danger">Blocked</span>
+                            }
+                            else if (!user.EmailConfirmed)
+                            {
+                                <span class="badge bg-warning text-dark">Unverified</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Checkbox logic
+        document.getElementById('selectAll').addEventListener('change', function () {
+            const checkboxes = document.querySelectorAll('.user-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        });
+
+        // Tooltip initialization (if using Bootstrap JS)
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+
+        // Function as requested in the task
+        function getUniqIdValue() {
+             return 'id-' + Math.random().toString(36).substr(2, 9);
+        }
+    </script>
+}

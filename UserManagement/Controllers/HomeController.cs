@@ -1,14 +1,134 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using UserManagement.Data;
 using UserManagement.Models;
 
 namespace UserManagement.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
+        private readonly ApplicationDbContext _dbContext;
+
+        public HomeController(ApplicationDbContext dbContext)
         {
-            return View();
+            _dbContext = dbContext;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            if (!User.Identity.IsAuthenticated) return RedirectToAction("Login", "Account");
+
+            var users = await _dbContext.Users.OrderByDescending(u => u.LastLoginTime).ToListAsync();
+
+            return View(users);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Block(string[] selectedUserIds)
+        {
+            if (selectedUserIds != null && selectedUserIds.Length > 0)
+            {
+                // nota bene: Filter to only find users who are NOT CURRENTLY blocked
+                var usersToBlock = await _dbContext.Users
+                    .Where(u => selectedUserIds.Contains(u.Id) && !u.IsBlocked)
+                    .ToListAsync();
+
+                int count = usersToBlock.Count;
+                if (count > 0)
+                {
+                    usersToBlock.ForEach(user => user.IsBlocked = true);
+                    await _dbContext.SaveChangesAsync();
+                    TempData["Success"] = $"Successfully blocked {count} user(s).";
+                }
+                else
+                {
+                    TempData["Info"] = "Selected users were already blocked.";
+                }
+            }
+            else
+            {
+                TempData["Error"] = "No users selected.";
+            }
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Unblock(string[] selectedUserIds)
+        {
+            if (selectedUserIds != null && selectedUserIds.Length > 0)
+            {
+                // nota bene: Filter to only find users who are CURRENTLY blocked
+                var usersToUnblock = await _dbContext.Users
+                    .Where(u => selectedUserIds.Contains(u.Id) && u.IsBlocked)
+                    .ToListAsync();
+
+                int count = usersToUnblock.Count;
+                if (count > 0)
+                {
+                    usersToUnblock.ForEach(user => user.IsBlocked = false);
+                    await _dbContext.SaveChangesAsync();
+                    TempData["Success"] = $"Successfully unblocked {count} user(s).";
+                }
+                else
+                {
+                    TempData["Info"] = "Selected users were already unblocked.";
+                }
+            }
+            else
+            {
+                TempData["Error"] = "No users selected.";
+            }
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Delete(string[] selectedUserIds)
+        {
+            if (selectedUserIds != null && selectedUserIds.Length > 0)
+            {
+                // IMPORTANT: In the case of delete, we check existence 
+                // because someone else might have deleted them in a parallel session.
+                var usersToDelete = await _dbContext.Users
+                    .Where(u => selectedUserIds.Contains(u.Id))
+                    .ToListAsync();
+
+                int count = usersToDelete.Count;
+                if (count > 0)
+                {
+                    _dbContext.RemoveRange(usersToDelete);
+                    await _dbContext.SaveChangesAsync();
+                    TempData["Success"] = $"Successfully deleted {count} user(s).";
+                }
+                else
+                {
+                    TempData["Error"] = "The selected users no longer exist.";
+                }
+            }
+            else
+            {
+                TempData["Error"] = "No users selected.";
+            }
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteUnverified()
+        {
+            var unverifiedUsers = await _dbContext.Users.Where(u => !u.EmailConfirmed).ToListAsync();
+            int count = unverifiedUsers.Count;
+
+            if (count > 0)
+            {
+                _dbContext.Users.RemoveRange(unverifiedUsers);
+                await _dbContext.SaveChangesAsync();
+                TempData["Success"] = $"Cleaned up {count} unverified account(s).";
+            }
+            else
+            {
+                TempData["Info"] = "No unverified accounts found to delete.";
+            }
+            return RedirectToAction("Index");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
