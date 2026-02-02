@@ -24,6 +24,8 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+app.UseMiddleware<UserStatusMiddleware>();
+
 app.MapStaticAssets();
 
 app.MapControllerRoute(
