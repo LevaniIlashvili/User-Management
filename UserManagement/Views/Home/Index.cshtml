@@ -91,21 +91,35 @@
 
 @section Scripts {
     <script>
-        // Checkbox logic
-        document.getElementById('selectAll').addEventListener('change', function () {
-            const checkboxes = document.querySelectorAll('.user-checkbox');
-            checkboxes.forEach(cb => cb.checked = this.checked);
+        const selectAll = document.getElementById('selectAll');
+        const userCheckboxes = document.querySelectorAll('.user-checkbox');
+        const toolbarButtons = document.querySelectorAll('#userForm button');
+
+        function updateToolbarState() {
+            const anyChecked = Array.from(userCheckboxes).some(cb => cb.checked);
+
+            toolbarButtons.forEach(btn => {
+                btn.disabled = !anyChecked;
+            });
+        }
+
+        selectAll.addEventListener('change', function () {
+            userCheckboxes.forEach(cb => cb.checked = this.checked);
+            updateToolbarState();
         });
 
-        // Tooltip initialization (if using Bootstrap JS)
+        userCheckboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                if (!this.checked) selectAll.checked = false;
+                updateToolbarState();
+            });
+        });
+
+        updateToolbarState();
+
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
-
-        // Function as requested in the task
-        function getUniqIdValue() {
-             return 'id-' + Math.random().toString(36).substr(2, 9);
-        }
+        });
     </script>
 }
