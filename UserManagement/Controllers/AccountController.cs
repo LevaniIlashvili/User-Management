@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using UserManagement.Models;
 using UserManagement.Services;
+
 namespace UserManagement.Controllers;
+
 public class AccountController : Controller
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -95,4 +97,23 @@ public class AccountController : Controller
 
         return false;
     }
+
+    [HttpGet]
+    public async Task<IActionResult> ConfirmEmail(string userId, string token)
+    {
+        if (userId == null || token == null) return RedirectToAction("Index", "Home");
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return NotFound();
+
+        var result = await _userManager.ConfirmEmailAsync(user, token);
+
+        if (result.Succeeded)
+            TempData["Success"] = "Email confirmed successfully!";
+        else
+            TempData["Error"] = "Error confirming email.";
+
+        return RedirectToAction("Index", "Home");
+    }
+
 }
