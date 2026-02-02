@@ -67,7 +67,11 @@
                         </td>
                         <td>@user.Name</td>
                         <td>@user.Email</td>
-                        <td class="small text-muted">@user.LastLoginTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                        <td class="small text-muted">
+                            <span class="local-time" data-utc="@user.LastLoginTime.ToString("o")">
+                                @user.LastLoginTime.ToUniversalTime().ToString("yyyy-MM-dd HH:mm") UTC
+                            </span>
+                        </td>
                         <td>
                             @if (user.IsBlocked)
                             {
@@ -120,6 +124,14 @@
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+
+        document.querySelectorAll('.local-time').forEach(el => {
+        const utcDate = new Date(el.getAttribute('data-utc'));
+            if (!isNaN(utcDate)) {
+                el.textContent = utcDate.toLocaleDateString() + ' ' +
+                utcDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+            }
         });
     </script>
 }
