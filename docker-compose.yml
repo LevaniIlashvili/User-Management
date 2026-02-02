@@ -1,0 +1,15 @@
+services:
+  usermanagement.db:
+      image: postgres:16
+      restart: always
+      environment:
+          POSTGRES_DB: usermanagementdb
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: admin123
+      ports:
+        - "5432:5432"
+      volumes:
+        - "usermanagementdata:/var/lib/postgresql/data"
+
+volumes:
+  usermanagementdata:
