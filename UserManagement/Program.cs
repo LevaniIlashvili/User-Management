@@ -2,6 +2,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("Default");
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("Email")
+);
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
