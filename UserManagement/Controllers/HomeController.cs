@@ -29,7 +29,6 @@ namespace UserManagement.Controllers
         {
             if (selectedUserIds != null && selectedUserIds.Length > 0)
             {
-                // nota bene: Filter to only find users who are NOT CURRENTLY blocked
                 var usersToBlock = await _dbContext.Users
                     .Where(u => selectedUserIds.Contains(u.Id) && !u.IsBlocked)
                     .ToListAsync();
@@ -58,7 +57,6 @@ namespace UserManagement.Controllers
         {
             if (selectedUserIds != null && selectedUserIds.Length > 0)
             {
-                // nota bene: Filter to only find users who are CURRENTLY blocked
                 var usersToUnblock = await _dbContext.Users
                     .Where(u => selectedUserIds.Contains(u.Id) && u.IsBlocked)
                     .ToListAsync();
@@ -87,8 +85,6 @@ namespace UserManagement.Controllers
         {
             if (selectedUserIds != null && selectedUserIds.Length > 0)
             {
-                // IMPORTANT: In the case of delete, we check existence 
-                // because someone else might have deleted them in a parallel session.
                 var usersToDelete = await _dbContext.Users
                     .Where(u => selectedUserIds.Contains(u.Id))
                     .ToListAsync();
@@ -113,21 +109,32 @@ namespace UserManagement.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> DeleteUnverified()
+        public async Task<IActionResult> DeleteUnverified(string[] selectedUserIds)
         {
-            var unverifiedUsers = await _dbContext.Users.Where(u => !u.EmailConfirmed).ToListAsync();
-            int count = unverifiedUsers.Count;
-
-            if (count > 0)
+            if (selectedUserIds != null && selectedUserIds.Length > 0)
             {
-                _dbContext.Users.RemoveRange(unverifiedUsers);
-                await _dbContext.SaveChangesAsync();
-                TempData["Success"] = $"Cleaned up {count} unverified account(s).";
+                var unverifiedUsers = await _dbContext.Users
+                    .Where(u => selectedUserIds.Contains(u.Id) && !u.EmailConfirmed)
+                    .ToListAsync();
+
+                int count = unverifiedUsers.Count;
+
+                if (count > 0)
+                {
+                    _dbContext.Users.RemoveRange(unverifiedUsers);
+                    await _dbContext.SaveChangesAsync();
+                    TempData["Success"] = $"Deleted {count} unverified account(s)";
+                }
+                else
+                {
+                    TempData["Info"] = "None of the selected users were unverified.";
+                }
             }
             else
             {
-                TempData["Info"] = "No unverified accounts found to delete.";
+                TempData["Error"] = "No users selected.";
             }
+
             return RedirectToAction("Index");
         }
 
