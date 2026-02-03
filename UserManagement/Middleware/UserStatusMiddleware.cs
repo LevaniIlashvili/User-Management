@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using UserManagement.Models;
 
 namespace UserManagement.Middleware;
@@ -6,10 +7,12 @@ namespace UserManagement.Middleware;
 public class UserStatusMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ITempDataDictionaryFactory _tempDataDictionaryFactory;
 
-    public UserStatusMiddleware(RequestDelegate next)
+    public UserStatusMiddleware(RequestDelegate next, ITempDataDictionaryFactory tempDataDictionaryFactory)
     {
         _next = next;
+        _tempDataDictionaryFactory = tempDataDictionaryFactory;
     }
 
     public async Task InvokeAsync(
@@ -23,6 +26,12 @@ public class UserStatusMiddleware
 
             if (user == null || user.IsBlocked)
             {
+                var tempData = _tempDataDictionaryFactory.GetTempData(context);
+
+                tempData.Clear();
+
+                tempData.Save();
+
                 await signInManager.SignOutAsync();
                 context.Response.Redirect("/Account/Login");
                 return;
